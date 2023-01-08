@@ -1,13 +1,22 @@
 ## © 2022 Nephio Authors
 ## Licensed under the Apache License 2.0
 ## SPDX-License-Identifier: Apache-2.0
-
+---
 - name: Slurp access token
   ansible.builtin.slurp:
     src: /home/{{ cloud_user }}/gitea/nephio-gitea-token
   register: gitea_token
   when:
     - gitea_username is defined
+- name: Pause until the gitea API is up and running
+  ansible.builtin.uri:
+    url: http://localhost:3000/api/v1/version
+    follow_redirects: none
+    method: GET
+  register: _result
+  until: _result.status == 200
+  retries: 12 # 12 * 5 seconds = 1min (60/5)
+  delay: 5 # Every 5 seconds
 - name: Create repos
   ansible.builtin.uri:
     url: http://localhost:3000/api/v1/user/repos
